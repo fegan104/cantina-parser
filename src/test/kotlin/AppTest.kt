@@ -2,6 +2,7 @@
 import com.frankegan.Selector
 import com.frankegan.getResourceAsText
 import com.frankegan.getViewsForSelector
+import com.frankegan.getViewsForSelectors
 import com.google.gson.JsonElement
 import com.google.gson.JsonParser
 import org.junit.Assert.assertEquals
@@ -40,5 +41,23 @@ class AppTest {
         val windowModes = getViewsForSelector(jsonRoot, Selector.Identifier("windowMode"))
 
         assertEquals(1, windowModes.size)
+    }
+
+    @Test
+    fun testStackColumn() {
+        val result = getViewsForSelectors(jsonRoot, mutableListOf(
+                Selector.Class("StackView"),
+                Selector.ClassName("column")))
+
+        assertEquals(3, result.size)
+    }
+
+    @Test
+    fun testCVarVertical() {
+        val result = getViewsForSelectors(jsonRoot, mutableListOf(
+                Selector.Class("CvarSelect"),
+                Selector.Identifier("verticalSync")))
+
+        assertEquals(1, result.size)
     }
 }

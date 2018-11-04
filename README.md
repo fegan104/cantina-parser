@@ -6,4 +6,4 @@ Run the program by providing a list of selectors. For example:
 
 `./cantina-parser StackView .column` 
 
-The program then returns a list of all json objects that match those selectors, and a count of how many objects matched. Based on a couple of test cases I included I believe my solution is correct.
+The program then returns a list of all json objects that match all given selectors, and a count of how many objects matched. Based on a couple of test cases I included I believe my solution is correct.

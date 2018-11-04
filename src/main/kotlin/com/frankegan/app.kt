@@ -14,30 +14,11 @@ fun main(args: Array<String>) {
     val parser = JsonParser()
     val rootObj = parser.parse(fileContent)
 
-    println(getViewsForClass(rootObj, "StackView"))
+//    println(getViewsForClass(rootObj, "StackView"))
+//    println(getViewsForClass(rootObj, "StackView").size)
+    val stackViews = getViewsForSelector(rootObj, Selector.Class("StackView"))
+    println()
     println(getViewsForClass(rootObj, "StackView").size)
-
-}
-
-fun getClasses(json: JsonElement, state: MutableList<String> = mutableListOf()): List<String> {
-    return when {
-        json.isJsonArray -> {
-            state.apply {
-                addAll(json.asJsonArray.flatMap { getClasses(it) })
-            }
-        }
-        json.isJsonObject -> {
-            val jsonObject = json.asJsonObject
-            val newClasses = jsonObject.entrySet()
-                    .filter { it.key == "class" }
-                    .map { it.value.asString }
-            state.apply {
-                addAll(newClasses)
-                addAll(jsonObject.entrySet().flatMap { getClasses(it.value) })
-            }
-        }
-        else -> listOf()
-    }
 }
 
 fun getViewsForClass(
@@ -62,16 +43,77 @@ fun getViewsForClass(
     }
 }
 
-private fun hasMatchingClass(json: JsonObject, targetClass: String): Boolean {
-    return json.has("class") && json["class"].isJsonPrimitive && json["class"].asString == targetClass
+fun getViewsForSelector(
+        json: JsonElement,
+        selector: Selector,
+        state: MutableList<JsonElement> = mutableListOf()
+): List<JsonElement> {
+    return when {
+        json.isJsonArray -> {
+            state.apply {
+                addAll(json.asJsonArray.flatMap { getViewsForSelector(it, selector) })
+            }
+        }
+        json.isJsonObject -> {
+            val jsonObject = json.asJsonObject
+            state.apply {
+                if (selectorMatch(jsonObject, selector)) add(jsonObject)
+                addAll(jsonObject.entrySet().flatMap { getViewsForSelector(it.value, selector) })
+            }
+        }
+        else -> listOf()
+    }
 }
 
-private fun getResourceAsText(path: String): String {
+fun selectorMatch(jsonObject: JsonObject, selector: Selector) = when (selector) {
+    is Selector.Class -> hasMatchingClass(jsonObject, selector.target)
+    is Selector.ClassName -> hasMatchingClassName(jsonObject, selector.target)
+    is Selector.Identifier -> hasMatchingIdentifier(jsonObject, selector.target)
+}
+
+private fun hasMatchingClass(json: JsonObject, targetClass: String): Boolean {
+    val index = "class"
+    return try {
+        json.has(index)
+                && json[index].isJsonPrimitive
+                && json[index].asString == targetClass
+    } catch (e: Exception) {
+        false
+    }
+}
+
+private fun hasMatchingClassName(json: JsonObject, targetClassName: String): Boolean {
+    val index = "classNames"
+    return try {
+        json.has(index)
+                && json[index].isJsonArray
+                && json[index].asJsonArray.any { it.asString == targetClassName }
+    } catch (e: Exception) {
+        false
+    }
+}
+
+private fun hasMatchingIdentifier(json: JsonObject, targetIdentifier: String): Boolean {
+    val index = "identifier"
+    return try {
+        json.has(index)
+                && json[index].isJsonPrimitive
+                && json[index].asString == targetIdentifier
+    } catch (e: Exception) {
+        false
+    }
+}
+
+fun getResourceAsText(path: String): String {
     return object {}.javaClass.getResource(path).readText()
 }
 
 sealed class Selector {
-    class Class
-    class ClassNames
-    class Identifier
+    abstract val target: String
+
+    data class Class(override val target: String) : Selector()
+    class ClassName(override val target: String) : Selector()
+    class Identifier(override val target: String) : Selector()
 }
+
+

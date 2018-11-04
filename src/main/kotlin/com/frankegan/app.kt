@@ -9,38 +9,20 @@ import com.google.gson.JsonParser
  * Created by @author frankegan on 11/3/18.
  */
 fun main(args: Array<String>) {
-    val fileContent = getResourceAsText("/SystemViewController.json")
+    val jsonRoot = JsonParser().parse(getResourceAsText("/SystemViewController.json"))
 
-    val parser = JsonParser()
-    val rootObj = parser.parse(fileContent)
+    if(args.isEmpty()) println("Please provide a selector").let { return }
 
-//    println(getViewsForClass(rootObj, "StackView"))
-//    println(getViewsForClass(rootObj, "StackView").size)
-    val stackViews = getViewsForSelector(rootObj, Selector.Class("StackView"))
-    println()
-    println(getViewsForClass(rootObj, "StackView").size)
-}
-
-fun getViewsForClass(
-        json: JsonElement,
-        targetClass: String,
-        state: MutableList<JsonElement> = mutableListOf()
-): List<JsonElement> {
-    return when {
-        json.isJsonArray -> {
-            state.apply {
-                addAll(json.asJsonArray.flatMap { getViewsForClass(it, targetClass) })
-            }
-        }
-        json.isJsonObject -> {
-            val jsonObject = json.asJsonObject
-            state.apply {
-                if (hasMatchingClass(jsonObject, targetClass)) add(jsonObject)
-                addAll(jsonObject.entrySet().flatMap { getViewsForClass(it.value, targetClass) })
-            }
-        }
-        else -> listOf()
+    val first = args.first()
+    val selector = when{
+        first.startsWith(".") -> Selector.ClassName(first.drop(1))
+        first.startsWith("#") -> Selector.Identifier(first.drop(1))
+        else -> Selector.Class(first)
     }
+
+    val selectedViews = getViewsForSelector(jsonRoot, selector)
+    println("Found ${selectedViews.size} matching view(s) for selector <$first>:")
+    println(selectedViews)
 }
 
 fun getViewsForSelector(
